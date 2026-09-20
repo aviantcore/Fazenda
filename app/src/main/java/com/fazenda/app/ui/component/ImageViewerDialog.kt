@@ -178,6 +178,7 @@ fun ImageViewerDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
+                    .statusBarsPadding()
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -217,6 +218,7 @@ fun ImageViewerDialog(
                 exit = fadeOut(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
                     .padding(bottom = 32.dp)
             ) {
                 Button(

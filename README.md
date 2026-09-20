@@ -4,19 +4,38 @@ Android application for farm management (зони, каталог, журнал,
 
 ## Build & Release
 
-### Локальна збірка
+### Налаштування середовища (Java/JDK)
+Для збірки використовується JDK 17 або JDK 21 (наприклад, JBR з Android Studio).
+Шлях до JDK автоматично зафіксовано в `gradle.properties`:
+```properties
+org.gradle.java.home=C:/Program Files/Android/Android Studio/jbr
+```
+Тому будь-які Gradle-команди (`.\gradlew ...`) запускаються без ручного встановлення `JAVA_HOME`.
 
+### Швидка Debug-збірка
+```powershell
+.\gradlew assembleDebug
+```
+Готовий APK зберігається у:
+`app\build\outputs\apk\debug\app-debug.apk`
+
+### Локальна Release-збірка (з підписом)
 ```powershell
 .\build-release.ps1
 ```
-
 Що робить скрипт:
-1. Читає `app/version.properties`, збільшує `VERSION_CODE` та патч-версію (напр. 1.0.8 → 1.0.9)
+1. Читає `app/version.properties`, автоматично збільшує `VERSION_CODE` та патч-версію (напр. 1.0.29 → 1.0.30)
 2. Читає пароль keystore з `.env` (ключ `KEYSTORE_PASSWORD`)
-3. Ставить змінну `FAZENDA_STORE_PASSWORD` — Gradle автоматично підписує APK
-4. Запускає `./gradlew assembleRelease`
-5. Копіює підписаний APK у `Fazenda-v{version}.apk`
+3. Встановлює змінну `FAZENDA_STORE_PASSWORD` — Gradle автоматично підписує APK релізним ключем
+4. Запускає `gradlew assembleRelease`
+5. Копіює підписаний APK у каталог `dist/`:
+   `dist\Fazenda-v{version}-Release.apk`
 6. Верифікує підпис через `apksigner verify --print-certs`
+
+### Встановлення на пристрій через ADB:
+```powershell
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r "dist\Fazenda-v{version}-Release.apk"
+```
 
 ### Публікація релізу
 
