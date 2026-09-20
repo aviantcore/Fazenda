@@ -570,6 +570,7 @@ fun CreateLogScreen(
             text = { Text("Незбережені дані будуть втрачені.") },
             confirmButton = {
                 TextButton(onClick = {
+                    createLogViewModel.clearPhoto()
                     showDiscardDialog = false
                     onNavigateBack()
                 }) {

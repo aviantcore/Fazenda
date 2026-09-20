@@ -1,23 +1,18 @@
 {
-  "$schema": "https://opencode.ai/config.json",
-  "enabled_providers": [
-    "lmstudio"
-  ],
-  "provider": {
-    "lmstudio": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "LM Studio (local)",
-      "options": {
-        "baseURL": "http://127.0.0.1:1234/v1"
-      },
-      "models": {
-        "google/gemma-4-12b": {
-          "name": "google/gemma-4-12b (local)"
+    "$schema": "https://opencode.ai/config.json",
+    "provider": {
+        "amazon-bedrock": {
+            "options": {
+                "accessKeyId": "{env:AWS_ACCESS_KEY_ID}",
+                "secretAccessKey": "{env:AWS_SECRET_ACCESS_KEY}",
+                "region": "us-east-1"
+            }
         },
-        "google/gemma-4-e4b": {
-          "name": "google/gemma-4-e4b (local)"
+        "openrouter": {
+            "options": {
+                "baseURL": "https://openrouter.ai/api/v1",
+                "apiKey": "{env:OPENROUTER_API_KEY}"
+            }
         }
-      }
     }
-  },
 }

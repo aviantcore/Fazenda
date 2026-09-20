@@ -1,5 +1,8 @@
 package com.fazenda.app.ui.screen.catalog
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -35,11 +38,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.fazenda.app.data.entity.LogEntity
 import com.fazenda.app.data.entity.LogWithChemicals
 import com.fazenda.app.ui.component.ImageViewerDialog
+import com.fazenda.app.ui.screen.journal.CameraCaptureDialog
 import com.fazenda.app.ui.util.PhotoPathResolver
 import com.fazenda.app.ui.viewmodel.CategoryViewModel
 import com.fazenda.app.ui.viewmodel.PlantDetailsViewModel
@@ -72,6 +77,7 @@ fun PlantDetailsScreen(
     var showImageViewer by remember { mutableStateOf(false) }
     var imageViewerIndex by remember { mutableStateOf(0) }
     var menuPhotoId by remember { mutableStateOf<Long?>(null) }
+    var showCamera by remember { mutableStateOf(false) }
 
     val zoneMap = remember(zones) { zones.associateBy { it.id } }
     val categoryMap = remember(categories) { categories.associateBy { it.id } }
@@ -80,6 +86,37 @@ fun PlantDetailsScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { plantDetailsViewModel.addPlantPhoto(plantId, it) }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            showCamera = true
+        } else {
+            Toast.makeText(context, "Потрібен дозвіл на камеру", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openCamera() {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            showCamera = true
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    if (showCamera) {
+        CameraCaptureDialog(
+            onDismiss = { showCamera = false },
+            onPhotoCaptured = { file ->
+                plantDetailsViewModel.addPlantPhotoFromFile(plantId, file)
+                showCamera = false
+            }
+        )
     }
 
     Scaffold(
@@ -99,11 +136,18 @@ fun PlantDetailsScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SmallFloatingActionButton(
+                    onClick = { openCamera() },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ) {
+                    Icon(Icons.Default.PhotoCamera, contentDescription = "Зробити фото")
+                }
+                SmallFloatingActionButton(
                     onClick = { addPhotoLauncher.launch("image/*") },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 ) {
-                    Icon(Icons.Default.Image, contentDescription = "Додати фото")
+                    Icon(Icons.Default.Image, contentDescription = "Додати з галереї")
                 }
                 ExtendedFloatingActionButton(
                     onClick = onEditClick,

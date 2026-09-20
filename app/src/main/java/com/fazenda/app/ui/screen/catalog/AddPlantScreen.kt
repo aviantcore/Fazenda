@@ -17,6 +17,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +52,8 @@ import com.fazenda.app.service.LocationService
 import com.fazenda.app.service.PlantInfoService
 import com.fazenda.app.ui.component.ImageViewerDialog
 import com.fazenda.app.ui.component.SearchableDropdown
+import com.fazenda.app.ui.screen.journal.CameraCaptureDialog
+import com.fazenda.app.ui.util.PhotoPathResolver
 import com.fazenda.app.ui.viewmodel.AddPlantViewModel
 import com.fazenda.app.ui.viewmodel.CategoryViewModel
 import com.fazenda.app.ui.viewmodel.ZoneViewModel
@@ -80,14 +85,24 @@ fun AddPlantScreen(
     var commentText by remember { mutableStateOf("") }
     var latitudeText by remember { mutableStateOf("") }
     var longitudeText by remember { mutableStateOf("") }
-    var selectedPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
+    var isSaved by remember { mutableStateOf(false) }
+    var showCamera by remember { mutableStateOf(false) }
     var showAddImageViewer by remember { mutableStateOf(false) }
     var isGettingLocation by remember { mutableStateOf(false) }
     var isFetchingInfo by remember { mutableStateOf(false) }
     var geminiResult by remember { mutableStateOf("") }
     var showDiscardDialog by remember { mutableStateOf(false) }
 
-    val hasUnsavedChanges = nameText.isNotBlank() || selectedPhotoUri != null ||
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!isSaved && pendingPhotoPath != null) {
+                fileService.deletePhoto(pendingPhotoPath!!)
+            }
+        }
+    }
+
+    val hasUnsavedChanges = nameText.isNotBlank() || pendingPhotoPath != null ||
         categorySearchText.isNotBlank() || selectedZone != null ||
         rowText.isNotBlank() || positionText.isNotBlank() ||
         commentText.isNotBlank() || latitudeText.isNotBlank() ||
@@ -129,7 +144,85 @@ fun AddPlantScreen(
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
-        selectedPhotoUri = uri
+        if (uri != null) {
+            try {
+                val savedPath = fileService.savePhotoFromUri(uri)
+                pendingPhotoPath?.let { oldPending ->
+                    if (fileService.isManagedInternalPhotoPath(oldPending)) {
+                        fileService.deletePhoto(oldPending)
+                    }
+                }
+                pendingPhotoPath = savedPath
+            } catch (e: Exception) {
+                Toast.makeText(context, "Не вдалося завантажити фото: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            showCamera = true
+        } else {
+            Toast.makeText(context, "Потрібен дозвіл на камеру", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openCamera() {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            showCamera = true
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    if (showCamera) {
+        CameraCaptureDialog(
+            onDismiss = { showCamera = false },
+            onPhotoCaptured = { file ->
+                try {
+                    val savedPath = fileService.savePhotoFromFile(file)
+                    file.delete()
+                    pendingPhotoPath?.let { oldPending ->
+                        if (fileService.isManagedInternalPhotoPath(oldPending)) {
+                            fileService.deletePhoto(oldPending)
+                        }
+                    }
+                    pendingPhotoPath = savedPath
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Не вдалося зберегти фото з камери: ${e.message}", Toast.LENGTH_SHORT).show()
+                } finally {
+                    showCamera = false
+                }
+            }
+        )
+    }
+
+    val savePlant = {
+        if (nameText.isNotBlank() && (selectedCategoryId != null || categorySearchText.isNotBlank())) {
+            scope.launch {
+                isSaved = true
+                val finalCategoryId = selectedCategoryId
+                    ?: categoryViewModel.findOrCreateCategory(categorySearchText)
+                viewModel.addPlant(
+                    PlantEntity(
+                        categoryId = finalCategoryId,
+                        name = nameText,
+                        zoneId = selectedZone?.id,
+                        row = rowText.toFloatOrNull(),
+                        position = positionText.toFloatOrNull(),
+                        comment = (commentText + if (geminiResult.isNotBlank()) "\n\n---\n$geminiResult" else "").ifBlank { null },
+                        photoPath = pendingPhotoPath,
+                        latitude = latitudeText.toDoubleOrNull(),
+                        longitude = longitudeText.toDoubleOrNull()
+                    )
+                )
+            }
+        }
     }
 
     LaunchedEffect(created) {
@@ -151,28 +244,7 @@ fun AddPlantScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = {
-                            if (nameText.isNotBlank() && (selectedCategoryId != null || categorySearchText.isNotBlank())) {
-                                scope.launch {
-                                    val finalCategoryId = selectedCategoryId
-                                        ?: categoryViewModel.findOrCreateCategory(categorySearchText)
-                                    val savedPhotoPath = selectedPhotoUri?.let { fileService.savePhotoFromUri(it) }
-                                    viewModel.addPlant(
-                                        PlantEntity(
-                                            categoryId = finalCategoryId,
-                                            name = nameText,
-                                            zoneId = selectedZone?.id,
-                                            row = rowText.toFloatOrNull(),
-                                            position = positionText.toFloatOrNull(),
-                                            comment = (commentText + if (geminiResult.isNotBlank()) "\n\n---\n$geminiResult" else "").ifBlank { null },
-                                            photoPath = savedPhotoPath,
-                                            latitude = latitudeText.toDoubleOrNull(),
-                                            longitude = longitudeText.toDoubleOrNull()
-                                        )
-                                    )
-                                }
-                            }
-                        },
+                        onClick = savePlant,
                         enabled = nameText.isNotBlank() && (selectedCategoryId != null || categorySearchText.isNotBlank())
                     ) {
                         Icon(Icons.Default.Save, contentDescription = "Зберегти")
@@ -188,46 +260,80 @@ fun AddPlantScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            if (showAddImageViewer && selectedPhotoUri != null) {
-                ImageViewerDialog(images = listOf(selectedPhotoUri), onDismiss = { showAddImageViewer = false })
+            val photoModel = PhotoPathResolver.toAsyncImageModel(context, pendingPhotoPath)
+            if (showAddImageViewer && photoModel != null) {
+                ImageViewerDialog(images = listOf(photoModel), onDismiss = { showAddImageViewer = false })
             }
 
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
                     .background(MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium)
-                    .align(Alignment.CenterHorizontally)
                     .then(
-                        if (selectedPhotoUri != null) Modifier.clickable { showAddImageViewer = true }
+                        if (photoModel != null) Modifier.clickable { showAddImageViewer = true }
                         else Modifier
                     )
             ) {
-                if (selectedPhotoUri != null) {
+                if (photoModel != null) {
                     AsyncImage(
-                        model = selectedPhotoUri,
+                        model = photoModel,
                         contentDescription = "Фото рослини",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
+                    IconButton(
+                        onClick = {
+                            pendingPhotoPath?.let { fileService.deletePhoto(it) }
+                            pendingPhotoPath = null
+                        },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                shape = MaterialTheme.shapes.small
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Видалити фото",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 } else {
                     Icon(
                         imageVector = Icons.Default.Grass,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier
-                            .align(Alignment.CenterVertically)
+                            .align(Alignment.Center)
                             .size(64.dp)
                     )
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick = { imagePickerLauncher.launch("image/*") },
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Додати фото")
+                OutlinedButton(
+                    onClick = { imagePickerLauncher.launch("image/*") },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Галерея")
+                }
+                Button(
+                    onClick = { openCamera() },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Камера")
+                }
             }
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -431,28 +537,7 @@ fun AddPlantScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    if (nameText.isNotBlank() && (selectedCategoryId != null || categorySearchText.isNotBlank())) {
-                        scope.launch {
-                            val finalCategoryId = selectedCategoryId
-                                ?: categoryViewModel.findOrCreateCategory(categorySearchText)
-                            val savedPhotoPath = selectedPhotoUri?.let { fileService.savePhotoFromUri(it) }
-                            viewModel.addPlant(
-                                PlantEntity(
-                                    categoryId = finalCategoryId,
-                                    name = nameText,
-                                    zoneId = selectedZone?.id,
-                                    row = rowText.toFloatOrNull(),
-                                    position = positionText.toFloatOrNull(),
-                                    comment = (commentText + if (geminiResult.isNotBlank()) "\n\n---\n$geminiResult" else "").ifBlank { null },
-                                    photoPath = savedPhotoPath,
-                                    latitude = latitudeText.toDoubleOrNull(),
-                                    longitude = longitudeText.toDoubleOrNull()
-                                )
-                            )
-                        }
-                    }
-                },
+                onClick = savePlant,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 enabled = nameText.isNotBlank() && (selectedCategoryId != null || categorySearchText.isNotBlank())
             ) {
@@ -471,6 +556,8 @@ fun AddPlantScreen(
             text = { Text("Введені дані будуть втрачені.") },
             confirmButton = {
                 TextButton(onClick = {
+                    pendingPhotoPath?.let { fileService.deletePhoto(it) }
+                    pendingPhotoPath = null
                     showDiscardDialog = false
                     onNavigateBack()
                 }) {

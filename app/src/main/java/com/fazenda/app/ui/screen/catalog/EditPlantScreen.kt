@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.Image
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -88,8 +90,9 @@ fun EditPlantScreen(
     var commentText by remember { mutableStateOf("") }
     var latitudeText by remember { mutableStateOf("") }
     var longitudeText by remember { mutableStateOf("") }
-    var selectedPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    var cameraPhotoFile by remember { mutableStateOf<File?>(null) }
+    var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
+    var isPhotoRemoved by remember { mutableStateOf(false) }
+    var isSaved by remember { mutableStateOf(false) }
     var showCamera by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isGettingLocation by remember { mutableStateOf(false) }
@@ -97,6 +100,14 @@ fun EditPlantScreen(
     var geminiResult by remember { mutableStateOf("") }
     var initialized by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!isSaved && pendingPhotoPath != null) {
+                fileService.deletePhoto(pendingPhotoPath!!)
+            }
+        }
+    }
 
     val categoryOptions = remember(categories) { categories.map { it.name } }
 
@@ -130,7 +141,20 @@ fun EditPlantScreen(
     val uriLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        selectedPhotoUri = uri
+        if (uri != null) {
+            try {
+                val savedPath = fileService.savePhotoFromUri(uri)
+                pendingPhotoPath?.let { oldPending ->
+                    if (fileService.isManagedInternalPhotoPath(oldPending)) {
+                        fileService.deletePhoto(oldPending)
+                    }
+                }
+                pendingPhotoPath = savedPath
+                isPhotoRemoved = false
+            } catch (e: Exception) {
+                Toast.makeText(context, "Не вдалося завантажити фото: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -158,10 +182,21 @@ fun EditPlantScreen(
         CameraCaptureDialog(
             onDismiss = { showCamera = false },
             onPhotoCaptured = { file ->
-                val savedPath = fileService.savePhotoFromFile(file)
-                file.delete()
-                cameraPhotoFile = File(savedPath)
-                showCamera = false
+                try {
+                    val savedPath = fileService.savePhotoFromFile(file)
+                    file.delete()
+                    pendingPhotoPath?.let { oldPending ->
+                        if (fileService.isManagedInternalPhotoPath(oldPending)) {
+                            fileService.deletePhoto(oldPending)
+                        }
+                    }
+                    pendingPhotoPath = savedPath
+                    isPhotoRemoved = false
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Не вдалося зберегти фото з камери: ${e.message}", Toast.LENGTH_SHORT).show()
+                } finally {
+                    showCamera = false
+                }
             }
         )
     }
@@ -193,7 +228,7 @@ fun EditPlantScreen(
         commentText != p.comment ?: "" ||
         latitudeText != p.latitude?.toString() ?: "" ||
         longitudeText != p.longitude?.toString() ?: "" ||
-        selectedPhotoUri != null || cameraPhotoFile != null
+        pendingPhotoPath != null || isPhotoRemoved
     } ?: false
 
     BackHandler(enabled = hasUnsavedChanges) {
@@ -216,11 +251,12 @@ fun EditPlantScreen(
         }
     } else {
         val p = plant!!
-        val mainPhotoModel = when {
-            cameraPhotoFile != null -> Uri.fromFile(cameraPhotoFile)
-            selectedPhotoUri != null -> selectedPhotoUri
-            else -> PhotoPathResolver.toAsyncImageModel(context, p.photoPath)
+        val activePhotoPath = when {
+            isPhotoRemoved -> null
+            pendingPhotoPath != null -> pendingPhotoPath
+            else -> p.photoPath
         }
+        val mainPhotoModel = PhotoPathResolver.toAsyncImageModel(context, activePhotoPath)
         var showEditImageViewer by remember { mutableStateOf(false) }
 
         if (showEditImageViewer) {
@@ -241,11 +277,13 @@ fun EditPlantScreen(
                     actions = {
                         IconButton(onClick = {
                             val currentPhotoPath = p.photoPath
-                            val finalPhotoPath = cameraPhotoFile?.absolutePath
-                                ?: selectedPhotoUri?.let { fileService.savePhotoFromUri(it) }
-                                ?: currentPhotoPath
-
+                            val finalPhotoPath = when {
+                                isPhotoRemoved -> null
+                                pendingPhotoPath != null -> pendingPhotoPath
+                                else -> currentPhotoPath
+                            }
                             scope.launch {
+                                isSaved = true
                                 val finalCategoryId = selectedCategoryId
                                     ?: if (categorySearchText.isNotBlank()) categoryViewModel.findOrCreateCategory(categorySearchText) else null
 
@@ -264,6 +302,7 @@ fun EditPlantScreen(
                                     )
                                 )
 
+                                // Видаляємо старий файл, якщо він відрізняється від нового
                                 if (fileService.isManagedInternalPhotoPath(currentPhotoPath) && currentPhotoPath != finalPhotoPath) {
                                     currentPhotoPath?.let { fileService.deletePhoto(it) }
                                 }
@@ -287,12 +326,11 @@ fun EditPlantScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
                         .background(MaterialTheme.colorScheme.primaryContainer, shape = MaterialTheme.shapes.medium)
-                        .align(Alignment.CenterHorizontally)
                         .then(
                             if (mainPhotoModel != null) Modifier.clickable { showEditImageViewer = true }
                             else Modifier
@@ -305,13 +343,33 @@ fun EditPlantScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
+                        IconButton(
+                            onClick = {
+                                pendingPhotoPath?.let { fileService.deletePhoto(it) }
+                                pendingPhotoPath = null
+                                isPhotoRemoved = true
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .background(
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                    shape = MaterialTheme.shapes.small
+                                )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Видалити фото",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
                     } else {
                         Icon(
                             imageVector = Icons.Default.Grass,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier
-                                .align(Alignment.CenterVertically)
+                                .align(Alignment.Center)
                                 .size(64.dp)
                         )
                     }
@@ -544,6 +602,8 @@ fun EditPlantScreen(
                     confirmButton = {
                         TextButton(
                             onClick = {
+                                pendingPhotoPath?.let { fileService.deletePhoto(it) }
+                                isSaved = true
                                 viewModel.deletePlant(plantId)
                                 showDeleteDialog = false
                                 onNavigateBack()
@@ -567,6 +627,8 @@ fun EditPlantScreen(
                     text = { Text("Незбережені зміни будуть втрачені.") },
                     confirmButton = {
                         TextButton(onClick = {
+                            pendingPhotoPath?.let { fileService.deletePhoto(it) }
+                            pendingPhotoPath = null
                             showDiscardDialog = false
                             onNavigateBack()
                         }) {

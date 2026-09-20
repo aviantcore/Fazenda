@@ -131,6 +131,26 @@ class PlantDetailsViewModel(
         }
     }
 
+    fun addPlantPhotoFromFile(plantId: Long, file: java.io.File) {
+        viewModelScope.launch {
+            val photoPath = fileService.savePhotoFromFile(file)
+            file.delete()
+            val photo = PlantPhotoEntity(
+                plantId = plantId,
+                photoPath = photoPath,
+                order = _plantPhotos.value.size
+            )
+            plantPhotoRepository.insertPhoto(photo)
+
+            val currentPlant = _plant.value
+            if (currentPlant != null && currentPlant.photoPath.isNullOrBlank()) {
+                val updatedPlant = currentPlant.copy(photoPath = photoPath)
+                plantRepository.updatePlant(updatedPlant)
+                _plant.value = updatedPlant
+            }
+        }
+    }
+
     fun replacePlantMainPhoto(plantId: Long, uri: Uri) {
         viewModelScope.launch {
             val currentPlant = _plant.value ?: plantRepository.getPlantById(plantId) ?: return@launch
@@ -149,9 +169,6 @@ class PlantDetailsViewModel(
 
     fun deletePlantPhoto(photo: PlantPhotoEntity) {
         viewModelScope.launch {
-            if (fileService.isManagedInternalPhotoPath(photo.photoPath)) {
-                photo.photoPath?.let { fileService.deletePhoto(it) }
-            }
             plantPhotoRepository.deletePhoto(photo)
 
             val remainingPhotos = _plantPhotos.value.filterNot { it.id == photo.id }
@@ -163,6 +180,12 @@ class PlantDetailsViewModel(
                 val updatedPlant = currentPlant.copy(photoPath = replacementPath)
                 plantRepository.updatePlant(updatedPlant)
                 _plant.value = updatedPlant
+            }
+
+            val isStillUsed = (_plant.value?.photoPath == photo.photoPath) ||
+                remainingPhotos.any { it.photoPath == photo.photoPath }
+            if (!isStillUsed && fileService.isManagedInternalPhotoPath(photo.photoPath)) {
+                photo.photoPath?.let { fileService.deletePhoto(it) }
             }
         }
     }
@@ -211,7 +234,16 @@ class PlantDetailsViewModel(
 
     fun deletePlant(plantId: Long) {
         viewModelScope.launch {
+            val photos = plantPhotoRepository.getPhotosByPlantIdList(plantId)
+            photos.forEach { photo ->
+                if (fileService.isManagedInternalPhotoPath(photo.photoPath)) {
+                    photo.photoPath?.let { fileService.deletePhoto(it) }
+                }
+            }
             plantRepository.getPlantById(plantId)?.let { plant ->
+                if (fileService.isManagedInternalPhotoPath(plant.photoPath)) {
+                    plant.photoPath?.let { fileService.deletePhoto(it) }
+                }
                 plantRepository.deletePlant(plant)
             }
         }
