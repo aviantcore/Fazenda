@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +36,13 @@ fun ScheduleEntity.getStatus(): ScheduleStatus {
     }
 }
 
+private data class StatusStyle(
+    val icon: ImageVector,
+    val label: String,
+    val backgroundColor: Color,
+    val textColor: Color
+)
+
 @Composable
 fun ScheduleStatusBadge(
     schedule: ScheduleEntity,
@@ -41,31 +50,31 @@ fun ScheduleStatusBadge(
 ) {
     val status = schedule.getStatus()
     
-    val (icon, label, backgroundColor, textColor) = when (status) {
-        ScheduleStatus.COMPLETED -> listOf(
-            Icons.Default.Check,
-            "Виконано",
-            MaterialTheme.colorScheme.primaryContainer,
-            MaterialTheme.colorScheme.onPrimaryContainer
+    val style = when (status) {
+        ScheduleStatus.COMPLETED -> StatusStyle(
+            icon = Icons.Default.Check,
+            label = "Виконано",
+            backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+            textColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
-        ScheduleStatus.OVERDUE -> listOf(
-            Icons.Default.Warning,
-            "Прострочено",
-            MaterialTheme.colorScheme.errorContainer,
-            MaterialTheme.colorScheme.onErrorContainer
+        ScheduleStatus.OVERDUE -> StatusStyle(
+            icon = Icons.Default.Warning,
+            label = "Прострочено",
+            backgroundColor = MaterialTheme.colorScheme.errorContainer,
+            textColor = MaterialTheme.colorScheme.onErrorContainer
         )
-        ScheduleStatus.ACTIVE -> listOf(
-            Icons.Default.Schedule,
-            "Активний",
-            MaterialTheme.colorScheme.tertiaryContainer,
-            MaterialTheme.colorScheme.onTertiaryContainer
+        ScheduleStatus.ACTIVE -> StatusStyle(
+            icon = Icons.Default.Schedule,
+            label = "Активний",
+            backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
+            textColor = MaterialTheme.colorScheme.onTertiaryContainer
         )
     }
     
     Row(
         modifier = modifier
             .background(
-                color = backgroundColor,
+                color = style.backgroundColor,
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(horizontal = 8.dp, vertical = 4.dp),
@@ -73,14 +82,14 @@ fun ScheduleStatusBadge(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(
-            imageVector = icon as androidx.compose.ui.graphics.vector.ImageVector,
+            imageVector = style.icon,
             contentDescription = null,
-            tint = textColor as Color,
+            tint = style.textColor,
             modifier = Modifier.size(14.dp)
         )
         Text(
-            text = label as String,
-            color = textColor as Color,
+            text = style.label,
+            color = style.textColor,
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp
         )

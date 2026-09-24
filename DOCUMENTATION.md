@@ -1,4 +1,4 @@
-﻿# Документація застосунку «Розумний Сад» (Fazenda App)
+# Документація застосунку «Розумний Сад» (Fazenda App)
 
 Застосунок **«Розумний Сад»** — це сучасний та зручний мобільний помічник для дачників, садівників та фермерів, який поєднує в собі функції каталогу рослин, планувальника догляду, інтерактивної карти ділянки та журналу подій з елементами інтеграції штучного інтелекту (ШІ) та прогнозу погоди.
 
@@ -23,7 +23,7 @@ Fazenda_app_android/
 │
 └── app/
     ├── build.gradle.kts         ← Android-конфіг, signingConfigs
-    ├── version.properties       ← VERSION_CODE=44, VERSION_NAME=1.0.31
+    ├── version.properties       ← VERSION_CODE=45, VERSION_NAME=1.0.32
     ├── fazenda-keystore.jks     ← Ключ підпису (в .gitignore)
     └── src/main/
         ├── AndroidManifest.xml  ← Permissions, FileProvider, NotificationReceiver
@@ -366,3 +366,16 @@ val app = (context.applicationContext as FazendaApplication)
 1. Перевіряє `SharedPreferences "fazenda_prefs"` → `"backup_uri"` (SAF DocumentTree URI)
 2. Якщо URI є → `BackupService.autoBackup(uri)` в `GlobalScope` + `Dispatchers.IO`
 3. Створює ZIP: `fazenda_db` + фотографії
+
+---
+
+## 🏗 Збірка проєкту (Регламент)
+
+Команда **«збери застосунок»** завжди означає створення підписаного **Release APK**:
+- **Скрипт**: `.\build-release.ps1`
+- **Процес**:
+  1. Автоматичний інкремент `VERSION_CODE` та patch-версії у `app/version.properties`
+  2. Підпис релізним ключем `app/fazenda-keystore.jks` (пароль з `.env`)
+  3. Верифікація через `apksigner`
+  4. Копіювання готового файлу у директорію `dist\Fazenda-v{version}-Release.apk`
+- **Debug-збірка** (`.\gradlew assembleDebug`) призначена виключно для перевірки коду на помилки компіляції.

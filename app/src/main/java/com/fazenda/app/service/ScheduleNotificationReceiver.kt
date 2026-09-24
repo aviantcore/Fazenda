@@ -1,5 +1,6 @@
 package com.fazenda.app.service
 
+import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -123,7 +124,7 @@ class ScheduleNotificationReceiver : BroadcastReceiver() {
             .setContentIntent(contentPendingIntent)
             .setAutoCancel(true)
             .addAction(
-                android.R.drawable.ic_menu_check,
+                android.R.drawable.checkbox_on_background,
                 "Виконано",
                 completePendingIntent
             )

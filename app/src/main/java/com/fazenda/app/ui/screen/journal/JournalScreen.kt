@@ -43,6 +43,7 @@ fun JournalScreen(
     onNavigateToPlant: (Long) -> Unit = {},
     journalViewModel: JournalViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val logsWithChemicals by journalViewModel.logsWithChemicals.collectAsState()
     val isLoading by journalViewModel.isLoading.collectAsState()
     val plantMap by journalViewModel.plants.collectAsState()
@@ -147,9 +148,9 @@ fun JournalScreen(
                             onPlantClick = onNavigateToPlant,
                             onViewPhoto = logWithChems.log.photoPath?.let { path ->
                                 {
-                                    currentImageViewerModel = com.fazenda.app.ui.util.PhotoPathResolver.toAsyncImageModel(
-                                        context = LocalContext.current,
-                                        path = path
+                                    currentImageViewerModel = PhotoPathResolver.toAsyncImageModel(
+                                        context = context,
+                                        photoPath = path
                                     )
                                     showImageViewer = true
                                 }
