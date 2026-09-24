@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fazenda.app.data.entity.ScheduleEntity
 import com.fazenda.app.ui.viewmodel.SchedulesViewModel
+import com.fazenda.app.ui.component.ScheduleStatusBadge
+import com.fazenda.app.ui.component.ScheduleStatus
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -399,24 +401,6 @@ fun ScheduleCard(
     val now = System.currentTimeMillis()
     val isExpired = !isCompleted && schedule.endDate > 0 && schedule.endDate < now
     
-    val statusLabel = when {
-        isCompleted -> "Виконано"
-        isExpired -> "Протерміновано"
-        else -> "Активний"
-    }
-    
-    val statusColor = when {
-        isCompleted -> MaterialTheme.colorScheme.primary
-        isExpired -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.tertiary
-    }
-    
-    val statusContainerColor = when {
-        isCompleted -> MaterialTheme.colorScheme.primaryContainer
-        isExpired -> MaterialTheme.colorScheme.errorContainer
-        else -> MaterialTheme.colorScheme.tertiaryContainer
-    }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -460,18 +444,7 @@ fun ScheduleCard(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = statusContainerColor
-                        ) {
-                            Text(
-                                text = statusLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = statusColor,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        ScheduleStatusBadge(schedule = schedule)
                     }
                 }
 

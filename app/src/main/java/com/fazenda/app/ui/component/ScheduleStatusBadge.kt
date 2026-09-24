@@ -1,0 +1,88 @@
+package com.fazenda.app.ui.component
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.fazenda.app.data.entity.ScheduleEntity
+
+enum class ScheduleStatus {
+    COMPLETED, OVERDUE, ACTIVE
+}
+
+fun ScheduleEntity.getStatus(): ScheduleStatus {
+    val now = System.currentTimeMillis()
+    return when {
+        isCompleted -> ScheduleStatus.COMPLETED
+        endDate > 0 && endDate < now -> ScheduleStatus.OVERDUE
+        else -> ScheduleStatus.ACTIVE
+    }
+}
+
+@Composable
+fun ScheduleStatusBadge(
+    schedule: ScheduleEntity,
+    modifier: Modifier = Modifier
+) {
+    val status = schedule.getStatus()
+    
+    val (icon, label, backgroundColor, textColor) = when (status) {
+        ScheduleStatus.COMPLETED -> listOf(
+            Icons.Default.Check,
+            "Виконано",
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        ScheduleStatus.OVERDUE -> listOf(
+            Icons.Default.Warning,
+            "Прострочено",
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer
+        )
+        ScheduleStatus.ACTIVE -> listOf(
+            Icons.Default.Schedule,
+            "Активний",
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer
+        )
+    }
+    
+    Row(
+        modifier = modifier
+            .background(
+                color = backgroundColor,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = icon as androidx.compose.ui.graphics.vector.ImageVector,
+            contentDescription = null,
+            tint = textColor as Color,
+            modifier = Modifier.size(14.dp)
+        )
+        Text(
+            text = label as String,
+            color = textColor as Color,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp
+        )
+    }
+}

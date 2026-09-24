@@ -42,6 +42,7 @@ import kotlinx.coroutines.withContext
 
 import com.fazenda.app.data.entity.CategoryEntity
 import com.fazenda.app.ui.viewmodel.CategoryViewModel
+import com.fazenda.app.ui.component.ScheduleStatusBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -266,15 +267,35 @@ fun DashboardScreen(
 
 @Composable
 fun ScheduleCard(schedule: ScheduleEntity, categoryMap: Map<Long, CategoryEntity>) {
+    val now = System.currentTimeMillis()
+    val isOverdue = !schedule.isCompleted && schedule.endDate < now
+    val isCompleted = schedule.isCompleted
+    
+    val statusColor = when {
+        isCompleted -> MaterialTheme.colorScheme.primary
+        isOverdue -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.outline
+    }
+    
+    val statusText = when {
+        isCompleted -> "Виконано"
+        isOverdue -> "Прострочено"
+        else -> "Заплановано"
+    }
+    
+    val dateFormat = remember { java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale("uk", "UA")) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = if (isOverdue) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)) else null
     ) {
         androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp)) {
             androidx.compose.foundation.layout.Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
@@ -288,6 +309,13 @@ fun ScheduleCard(schedule: ScheduleEntity, categoryMap: Map<Long, CategoryEntity
                         fontSize = 12.sp
                     )
                 }
+                ScheduleStatusBadge(schedule = schedule)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.tertiaryContainer
@@ -300,6 +328,11 @@ fun ScheduleCard(schedule: ScheduleEntity, categoryMap: Map<Long, CategoryEntity
                         fontSize = 12.sp
                     )
                 }
+                Text(
+                    text = dateFormat.format(java.util.Date(schedule.startDate)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text("Рецепт обробки:", style = MaterialTheme.typography.labelMedium)
