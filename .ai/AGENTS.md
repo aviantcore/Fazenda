@@ -1,4 +1,4 @@
-﻿# Fazenda App — Інструкції агента
+# Fazenda App — Інструкції агента
 
 ## Роль агента
 
@@ -23,7 +23,7 @@
 
 **Репозиторій**: `https://github.com/aviantcorellc-lang/Fazenda`
 **Гілка**: `main`
-**Версія**: `1.0.31` (VERSION_CODE = 44)
+**Версія**: `1.0.32` (VERSION_CODE = 45)
 
 ---
 
@@ -186,19 +186,22 @@ withContext(Dispatchers.IO) {
 
 ## Build & Release
 
-### Debug збірка
-```powershell
-.\gradlew assembleDebug
-# APK: app\build\outputs\apk\debug\app-debug.apk
-```
+> ⚠️ **Критичне правило**: Команда користувача **«збери застосунок»** (або «збірка») означає **виключно Release-збірку** через `.\build-release.ps1` (інкремент версії, створення підписаного APK у `dist\Fazenda-v{version}-Release.apk` та верифікація через apksigner).
+> Debug-збірка (`.\gradlew assembleDebug`) використовується лише як допоміжний крок для швидкої перевірки помилок компіляції.
 
-### Release збірка (локально)
+### Release збірка (основна для команди «збери застосунок»)
 ```powershell
 .\build-release.ps1
 # 1. Авто-збільшує VERSION_CODE + патч в app/version.properties
 # 2. Читає KEYSTORE_PASSWORD з .env
 # 3. Збирає підписаний APK → dist\Fazenda-v{version}-Release.apk
 # 4. Верифікує підпис (apksigner)
+```
+
+### Debug збірка (лише для швидкої перевірки коду)
+```powershell
+.\gradlew assembleDebug
+# APK: app\build\outputs\apk\debug\app-debug.apk
 ```
 
 ### Публікація

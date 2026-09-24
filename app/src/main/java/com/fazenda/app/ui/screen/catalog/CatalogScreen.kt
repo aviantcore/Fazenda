@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Category
 import com.fazenda.app.ui.component.MultiFloatingActionButton
 import com.fazenda.app.ui.component.FabItem
+import com.fazenda.app.ui.component.ShimmerEffect
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -357,6 +358,7 @@ fun PlantCard(
                                     },
                                 contentScale = ContentScale.Crop
                             )
+                        }
                     }
                 } else {
                     // Кілька фото — горизонтальний pager з крапками

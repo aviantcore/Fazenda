@@ -1,11 +1,11 @@
-﻿# Fazenda App — План розробки та прогрес
+# Fazenda App — План розробки та прогрес
 
 > Джерело правди для черги задач. Читати разом з `.ai/AGENTS.md` та `DOCUMENTATION.md`.
-> Версія: 1.0.31 (VERSION_CODE = 44), вересень 2026.
+> Версія: 1.0.32 (VERSION_CODE = 45), вересень 2026.
 
 ---
 
-## ✅ Реалізовано (v1.0.0 → v1.0.31)
+## ✅ Реалізовано (v1.0.0 → v1.0.32)
 
 ### Core
 - [x] Single Activity + Navigation Compose (3 bottom tabs)
@@ -106,6 +106,6 @@
 | Shared component файлів | 4 |
 | Room DB version | 10 |
 | Room migrations | 2 (8→9, 9→10) |
-| App version | 1.0.31 (code 44) |
+| App version | 1.0.32 (code 45) |
 | Min SDK | 26 |
 | Target SDK | 35 |
