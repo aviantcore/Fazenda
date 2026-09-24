@@ -338,20 +338,25 @@ fun PlantCard(
                         }
                     }
                 } else if (totalPhotos == 1) {
-                    // Одне фото — просте зображення
+                    // Одне фото — просте зображення з shimmer-фоном
                     val model = allPhotoModels.firstOrNull()
                     if (model != null) {
-                        AsyncImage(
-                            model = model,
-                            contentDescription = plant.name,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable {
-                                    imageViewerStartIndex = 0
-                                    showImageViewer = true
-                                },
-                            contentScale = ContentScale.Crop
-                        )
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            // Shimmer фон під час завантаження
+                            ShimmerEffect(
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            AsyncImage(
+                                model = model,
+                                contentDescription = plant.name,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable {
+                                        imageViewerStartIndex = 0
+                                        showImageViewer = true
+                                    },
+                                contentScale = ContentScale.Crop
+                            )
                     }
                 } else {
                     // Кілька фото — горизонтальний pager з крапками
