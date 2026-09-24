@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.fazenda.app.ui.component.ImageViewerDialog
 import com.fazenda.app.ui.component.MultiFloatingActionButton
 import com.fazenda.app.ui.component.FabItem
 import com.fazenda.app.data.entity.CategoryEntity
@@ -39,6 +40,7 @@ import java.util.*
 @Composable
 fun JournalScreen(
     onNavigateToCreateLog: () -> Unit = {},
+    onNavigateToPlant: (Long) -> Unit = {},
     journalViewModel: JournalViewModel = viewModel()
 ) {
     val logsWithChemicals by journalViewModel.logsWithChemicals.collectAsState()
@@ -48,6 +50,16 @@ fun JournalScreen(
     val categoryMap by journalViewModel.categories.collectAsState()
 
     var logToDelete by remember { mutableStateOf<LogWithChemicals?>(null) }
+    var showImageViewer by remember { mutableStateOf(false) }
+    var currentImageViewerModel by remember { mutableStateOf<Any?>(null) }
+
+    // Діалог перегляду фото
+    if (showImageViewer && currentImageViewerModel != null) {
+        ImageViewerDialog(
+            images = listOf(currentImageViewerModel),
+            onDismiss = { showImageViewer = false }
+        )
+    }
 
     // Діалог підтвердження видалення
     if (logToDelete != null) {
@@ -131,7 +143,17 @@ fun JournalScreen(
                             plantName = logWithChems.log.plantId?.let { plantMap[it]?.name },
                             zoneName = logWithChems.log.zoneId?.let { zoneMap[it]?.name },
                             categoryName = logWithChems.log.categoryId?.let { categoryMap[it]?.name },
-                            onDelete = { logToDelete = logWithChems }
+                            onDelete = { logToDelete = logWithChems },
+                            onPlantClick = onNavigateToPlant,
+                            onViewPhoto = logWithChems.log.photoPath?.let { path ->
+                                {
+                                    currentImageViewerModel = com.fazenda.app.ui.util.PhotoPathResolver.toAsyncImageModel(
+                                        context = LocalContext.current,
+                                        path = path
+                                    )
+                                    showImageViewer = true
+                                }
+                            }
                         )
                     }
                 }
@@ -147,7 +169,9 @@ fun SwipeToDismissLogCard(
     plantName: String?,
     zoneName: String?,
     categoryName: String?,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPlantClick: ((Long) -> Unit)? = null,
+    onViewPhoto: (() -> Unit)? = null
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -195,7 +219,9 @@ fun SwipeToDismissLogCard(
                 plantName = plantName,
                 zoneName = zoneName,
                 categoryName = categoryName,
-                onDelete = onDelete
+                onDelete = onDelete,
+                onPlantClick = onPlantClick,
+                onViewPhoto = onViewPhoto
             )
         }
     )
@@ -207,7 +233,9 @@ fun LogCard(
     plantName: String?,
     zoneName: String?,
     categoryName: String?,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPlantClick: ((Long) -> Unit)? = null,
+    onViewPhoto: (() -> Unit)? = null
 ) {
     val log = logWithChems.log
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale("uk", "UA")) }
@@ -258,6 +286,30 @@ fun LogCard(
                         Icon(Icons.Default.MoreVert, contentDescription = "Меню")
                     }
                     DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        if (logPhotoModel != null && onViewPhoto != null) {
+                            DropdownMenuItem(
+                                text = { Text("Переглянути фото") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Photo, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onViewPhoto()
+                                }
+                            )
+                        }
+                        if (log.plantId != null && onPlantClick != null) {
+                            DropdownMenuItem(
+                                text = { Text("Деталі рослини") },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Grass, contentDescription = null)
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onPlantClick(log.plantId)
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("Видалити", color = MaterialTheme.colorScheme.error) },
                             leadingIcon = {

@@ -170,6 +170,9 @@ fun AppNavigation() {
                 JournalScreen(
                     onNavigateToCreateLog = {
                         navController.navigate(DetailScreen.CreateLog.route)
+                    },
+                    onNavigateToPlant = { plantId ->
+                        navController.navigate(DetailScreen.PlantDetails.createRoute(plantId))
                     }
                 )
             }
