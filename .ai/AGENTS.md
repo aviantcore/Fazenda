@@ -23,7 +23,7 @@
 
 **Репозиторій**: `https://github.com/aviantcorellc-lang/Fazenda`
 **Гілка**: `main`
-**Версія**: `1.0.32` (VERSION_CODE = 45)
+**Версія**: `1.0.36` (VERSION_CODE = 46)
 
 ---
 
@@ -186,17 +186,20 @@ withContext(Dispatchers.IO) {
 
 ## Build & Release
 
-> ⚠️ **Критичне правило**: Команда користувача **«збери застосунок»** (або «збірка») означає **виключно Release-збірку** через `.\build-release.ps1` (інкремент версії, створення підписаного APK у `dist\Fazenda-v{version}-Release.apk` та верифікація через apksigner).
-> Debug-збірка (`.\gradlew assembleDebug`) використовується лише як допоміжний крок для швидкої перевірки помилок компіляції.
+> ⚠️ **Критичне правило**: Команда користувача **«збери застосунок»** (або «збірка») означає **виключно Release-збірку** через GitHub Actions (пуш тега `v*`).
+> Локальна збірка без GitHub Actions не є основним способом створення релізів.
 
-### Release збірка (основна для команди «збери застосунок»)
-```powershell
-.\build-release.ps1
-# 1. Авто-збільшує VERSION_CODE + патч в app/version.properties
-# 2. Читає KEYSTORE_PASSWORD з .env
-# 3. Збирає підписаний APK → dist\Fazenda-v{version}-Release.apk
-# 4. Верифікує підпис (apksigner)
+### Release збірка (основна — GitHub Actions)
+```bash
+git tag v{version}
+git push origin v{version}
 ```
+GitHub Actions (`.github/workflows/release.yml`) автоматично:
+1. Використовує JDK 17 та Android SDK
+2. Декодує keystore з `KEYSTORE_BASE64` secret
+3. Оновлює `version.properties` (інкремент VERSION_CODE + VERSION_NAME)
+4. Збирає та підписує APK через `apksigner`
+5. Створює GitHub Release з APK
 
 ### Debug збірка (лише для швидкої перевірки коду)
 ```powershell
@@ -204,16 +207,14 @@ withContext(Dispatchers.IO) {
 # APK: app\build\outputs\apk\debug\app-debug.apk
 ```
 
-### Публікація
-```powershell
-.\build-release.ps1 -Publish
-# git tag v{version} + push + GitHub Release з APK
-```
+### Секрети GitHub (обов'язкові для CI/CD)
 
-### Gradle JDK (в gradle.properties)
-```properties
-org.gradle.java.home=C:/Program Files/Android/Android Studio/jbr
-```
+| Secret | Значення |
+|--------|----------|
+| `KEYSTORE_BASE64` | Keystore у base64 |
+| `KEYSTORE_PASSWORD` | Пароль keystore |
+
+Налаштування: `GitHub → Repo → Settings → Secrets and variables → Actions`
 
 ---
 

@@ -23,7 +23,7 @@ Fazenda_app_android/
 │
 └── app/
     ├── build.gradle.kts         ← Android-конфіг, signingConfigs
-    ├── version.properties       ← VERSION_CODE=45, VERSION_NAME=1.0.32
+    ├── version.properties       ← VERSION_CODE=46, VERSION_NAME=1.0.36
     ├── fazenda-keystore.jks     ← Ключ підпису (в .gitignore)
     └── src/main/
         ├── AndroidManifest.xml  ← Permissions, FileProvider, NotificationReceiver
@@ -371,11 +371,9 @@ val app = (context.applicationContext as FazendaApplication)
 
 ## 🏗 Збірка проєкту (Регламент)
 
-Команда **«збери застосунок»** завжди означає створення підписаного **Release APK**:
-- **Скрипт**: `.\build-release.ps1`
-- **Процес**:
-  1. Автоматичний інкремент `VERSION_CODE` та patch-версії у `app/version.properties`
-  2. Підпис релізним ключем `app/fazenda-keystore.jks` (пароль з `.env`)
-  3. Верифікація через `apksigner`
-  4. Копіювання готового файлу у директорію `dist\Fazenda-v{version}-Release.apk`
-- **Debug-збірка** (`.\gradlew assembleDebug`) призначена виключно для перевірки коду на помилки компіляції.
+Команда **«збери застосунок»** завжди означає створення підписаного **Release APK** через GitHub Actions:
+- **Процес**: Пуш тега `v*` → GitHub Actions збирає підписаний APK → автоматичний Release
+- **Скрипт**: `.github/workflows/release.yml`
+- **Секрети**: `KEYSTORE_BASE64` та `KEYSTORE_PASSWORD` в GitHub Secrets
+
+**Debug-збірка** (`.\\gradlew assembleDebug`) призначена виключно для перевірки коду на помилки компіляції.

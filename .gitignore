@@ -10,3 +10,4 @@ __pycache__/
 *.keystore
 .env
 .keystore-pass
+dist/
