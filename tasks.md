@@ -1,26 +1,111 @@
-# Implementation Plan: UI/UX Improvements & Feature Enhancements
+﻿# Fazenda App — План розробки та прогрес
 
-## Phase 1: Foundation & Infrastructure
-- [ ] **Unified Search Engine**: Implement a search that covers multiple modules (Catalog, Journal, Chemicals) to improve navigation.
-- [ ] **Notification System**: Set up local notifications for `ScheduleEntity` reminders.
-- [ ] **Shared UI Components**: Create reusable components for status indicators and consistent form fields.
-- [ ] **Connectivity Status**: Add visual indicators for Weather and Wikipedia service connectivity.
+> Джерело правди для черги задач. Читати разом з `.ai/AGENTS.md` та `DOCUMENTATION.md`.
+> Версія: 1.0.31 (VERSION_CODE = 44), вересень 2026.
 
-## Phase 2: Interaction Optimization
-- [ ] **Quick Actions (FAB)**: Implement Floating Action Buttons on `JournalScreen` and `Catalog`.
-- [ ] **Contextual Defaults**: Implement "Default Contexts" to remember frequently used parameters (e.g., current zone/plot).
-- [ ] **Context Menus**: Add long-press or "three-dot" menus for quick actions in lists.
+---
 
-## Phase 3: Visual & UX Polish
-- [ ] **Dashboard Analytics**: Integrate charts and graphs for chemical usage and growth trends.
-- [ ] **Enhanced Image Viewer**: Update `ImageViewerDialog` (add pinch-to-zoom, swipe gestures, auto-reset zoom on page change, and clear page indicators).
-- [ ] **Status Highlighting**: Implement color-coded status indicators (Planned, In Progress, Completed) across all lists.
-- [ ] **Progress Indicators**: Add visual feedback for long-running operations like image loading or data processing.
+## ✅ Реалізовано (v1.0.0 → v1.0.31)
 
-## Phase 4: User Experience & Onboarding
-- [ ] **Onboarding Flow**: Create a brief interactive tutorial for first-time users.
+### Core
+- [x] Single Activity + Navigation Compose (3 bottom tabs)
+- [x] Room DB v10 (8 entities, 7 DAO, 7 repositories)
+- [x] Manual DI через FazendaApplication singleton
+- [x] CSV seeding при першому запуску
+- [x] Dark/Light тема (Material 3)
 
-## Verification & Testing
-- [ ] Unit tests for search and notification logic.
-- [ ] UI testing for navigation flows.
-- [ ] Integration testing for connectivity status updates.
+### Каталог рослин
+- [x] Список з пошуком + фільтр chips за категоріями
+- [x] Деталі рослини (галерея, GPS-карта, коментар, історія дій)
+- [x] Multi-photo support (PlantPhotoEntity, горизонтальна галерея)
+- [x] Додавання/редагування рослини (CameraX + галерея)
+- [x] Long-press → призначити головне фото / видалити фото
+
+### Журнал
+- [x] Хронологічний список логів з кольоровими тегами
+- [x] 6 типів дій: NOTE, FERTILIZE, SPRAY, REPLACE, ADD_PLANT, REMOVE_PLANT
+- [x] CameraX для фото при створенні запису
+- [x] AI-діагноз (deep-link Gemini + копіювання)
+- [x] Вибір хімікатів для запису (M:M через log_chemicals)
+
+### Дашборд
+- [x] План обробок (ScheduleEntity → категорія × фаза × рецепт)
+- [x] Перевірка оновлень (UpdateService → GitHub Releases)
+- [x] Погодний віджет (Open-Meteo API + агро-рекомендації)
+
+### Карта
+- [x] OsmDroid з кастомними круглими маркерами-аватарами
+- [x] Bottom Sheet при тапі (замість InfoWindow)
+- [x] GPS-кнопка для геолокації
+
+### Інфраструктура
+- [x] Бекап/відновлення (ZIP: БД + фото)
+- [x] Авто-бекап при виході (SAF DocumentTree)
+- [x] Онбординг (3 кроки) → BackupSetup → Dashboard
+- [x] build-release.ps1 (авто-версія, підпис, dist/)
+- [x] GitHub Actions CI/CD (release.yml)
+- [x] Нотифікації розкладу (ScheduleAlarmManager + Receiver)
+- [x] Мережевий стан (NetworkConnectivityObserver)
+- [x] Глобальний пошук (SearchScreen + SearchViewModel)
+- [x] База знань (KnowledgeBaseScreen)
+- [x] Multi FAB Speed Dial
+- [x] ImageViewerDialog (повноекранний перегляд фото)
+- [x] SearchableDropdown
+
+---
+
+## 🔲 Черга задач
+
+### Phase 1: Foundation & Infrastructure
+- [ ] **Unified Search Engine**: розширити SearchViewModel — покриття Catalog + Journal + Chemicals з єдиним UI
+- [ ] **Notification System**: дописати повний scheduling flow — вибір дати/часу нагадування для ScheduleEntity, повторювальні alarm
+- [ ] **Shared UI Components**: виокремити переиспользовувані компоненти для status indicators (Planned/In Progress/Completed) та уніфікованих form fields
+- [ ] **Connectivity Status**: додати візуальні індикатори стану підключення до Weather API та Wikipedia API (online/offline badge)
+
+### Phase 2: Interaction Optimization
+- [ ] **Quick Actions FAB**: додати FAB Speed Dial на JournalScreen (вже є MultiFAB компонент — інтегрувати)
+- [ ] **Contextual Defaults**: запам'ятовувати останню вибрану зону/ділянку для швидкого заповнення форм
+- [ ] **Context Menus**: додати long-press/three-dot меню до всіх списків (частково є в каталозі — розширити на журнал та розклад)
+
+### Phase 3: Visual & UX Polish
+- [ ] **Dashboard Analytics**: інтегрувати графіки — витрати хімікатів по місяцях, тренди росту (Compose charts або Canvas)
+- [ ] **Enhanced ImageViewerDialog**: додати pinch-to-zoom, swipe gestures, auto-reset zoom, clear page indicators (поточний — базовий pager)
+- [ ] **Status Highlighting**: кольорові статуси (🟢 Completed / 🟡 In Progress / ⚪ Planned) у всіх списках розкладу та журналу
+- [ ] **Progress Indicators**: skeleton screens або shimmer для довгих операцій (завантаження фото, мережеві запити)
+
+### Phase 4: User Experience & Onboarding
+- [ ] **Enhanced Onboarding**: розширити інтерактивний туторіал (tooltip hints, highlight UI elements)
+
+### Phase 5: Verification & Testing
+- [ ] Unit tests: SearchViewModel, ScheduleAlarmManager, BackupService
+- [ ] UI tests: navigation flows (Onboarding → BackupSetup → Dashboard → Catalog → Details)
+- [ ] Integration tests: NetworkConnectivityObserver, WeatherService, UpdateService
+
+---
+
+## 📝 Відомі проблеми та технічний борг
+
+- `GlobalScope` в `FazendaApplication.performAutoBackup()` — замінити на `ProcessLifecycleOwner.lifecycleScope`
+- `fallbackToDestructiveMigration(true)` в AppDatabase — видалити для production, писати повні міграції
+- `exportSchema = false` — ввімкнути для автоматичної валідації міграцій
+- `ImageViewerDialog` — 11.8KB, потрібен рефакторинг (pinch-to-zoom, gesture handling)
+- Великі Screen-файли (EditPlantScreen 29.7KB, CreateLogScreen 29KB, PlantDetailsScreen 28KB) — потрібна декомпозиція на менші Composable
+
+---
+
+## 📊 Статистика коду
+
+| Метрика | Значення |
+|---------|----------|
+| Screen файлів | 16 |
+| ViewModel файлів | 12 |
+| Entity файлів | 10 |
+| DAO файлів | 7 |
+| Repository файлів | 7 |
+| Service файлів | 9 |
+| Shared component файлів | 4 |
+| Room DB version | 10 |
+| Room migrations | 2 (8→9, 9→10) |
+| App version | 1.0.31 (code 44) |
+| Min SDK | 26 |
+| Target SDK | 35 |

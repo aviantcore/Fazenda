@@ -1,82 +1,81 @@
-# Fazenda App
+﻿# Fazenda App — «Розумний Сад» 🌱
 
-Android application for farm management (зони, каталог, журнал, дашборд, мапа).
+Android-додаток для управління дачею/фермою: каталог рослин, журнал догляду, дашборд, інтерактивна карта, бекап/відновлення.
+
+## Функціонал
+
+- **Каталог** — рослини з фото-галереєю, GPS, зонами, категоріями
+- **Журнал** — хронологія дій (підживлення, обприскування, заміна) з CameraX-фото та AI-діагнозом
+- **Дашборд** — план обробок, погодний віджет, перевірка оновлень
+- **Карта** — OsmDroid з кастомними аватарами-маркерами
+- **Бекап** — ZIP (БД + фото), авто-бекап при виході
+- **Пошук** — глобальний по рослинам, логам, хімікатам
+- **Розклад** — CRUD обробок з нотифікаціями
+
+## Tech Stack
+
+Kotlin • Jetpack Compose • Material 3 • Room • CameraX • Coil • OsmDroid • Coroutines/Flow
 
 ## Build & Release
 
-### Налаштування середовища (Java/JDK)
-Для збірки використовується JDK 17 або JDK 21 (наприклад, JBR з Android Studio).
-Шлях до JDK автоматично зафіксовано в `gradle.properties`:
+### Налаштування середовища
+JDK 17 зафіксовано в `gradle.properties`:
 ```properties
 org.gradle.java.home=C:/Program Files/Android/Android Studio/jbr
 ```
-Тому будь-які Gradle-команди (`.\gradlew ...`) запускаються без ручного встановлення `JAVA_HOME`.
 
-### Швидка Debug-збірка
+### Debug
 ```powershell
 .\gradlew assembleDebug
+# → app\build\outputs\apk\debug\app-debug.apk
 ```
-Готовий APK зберігається у:
-`app\build\outputs\apk\debug\app-debug.apk`
 
-### Локальна Release-збірка (з підписом)
+### Release (локально)
 ```powershell
 .\build-release.ps1
 ```
-Що робить скрипт:
-1. Читає `app/version.properties`, автоматично збільшує `VERSION_CODE` та патч-версію (напр. 1.0.29 → 1.0.30)
-2. Читає пароль keystore з `.env` (ключ `KEYSTORE_PASSWORD`)
-3. Встановлює змінну `FAZENDA_STORE_PASSWORD` — Gradle автоматично підписує APK релізним ключем
-4. Запускає `gradlew assembleRelease`
-5. Копіює підписаний APK у каталог `dist/`:
-   `dist\Fazenda-v{version}-Release.apk`
-6. Верифікує підпис через `apksigner verify --print-certs`
+Скрипт автоматично:
+1. Збільшує `VERSION_CODE` + патч у `app/version.properties`
+2. Читає пароль keystore з `.env` (`KEYSTORE_PASSWORD=...`)
+3. Збирає підписаний APK → `dist\Fazenda-v{version}-Release.apk`
+4. Верифікує підпис через `apksigner verify --print-certs`
 
-### Встановлення на пристрій через ADB:
+### Встановлення на пристрій
 ```powershell
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r "dist\Fazenda-v{version}-Release.apk"
+& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" install -r "dist\Fazenda-v1.0.31-Release.apk"
 ```
 
-### Публікація релізу
-
+### Публікація GitHub Release
 ```powershell
 .\build-release.ps1 -Publish
+# → git tag v{version} + push + GitHub Release з APK
 ```
-
-Додатково:
-1. Створює git-тег `v{version}`
-2. Пушить тег на GitHub
-3. Створює GitHub Release з APK як ассет
 
 ### GitHub Actions (CI/CD)
 
 Файл: `.github/workflows/release.yml`
-
 Тригер: пуш тега `v*`
 
 ```bash
-git tag v1.0.9
-git push origin v1.0.9
+git tag v1.0.31
+git push origin v1.0.31
 ```
 
-Що робить workflow:
-1. Виставляє JDK 17 + Android SDK
-2. Декодує keystore із секрету `KEYSTORE_BASE64`
-3. Парсить версію з тега
-4. Оновлює `version.properties`
-5. Будує та підписує APK (через `FAZENDA_STORE_PASSWORD` із секрету `KEYSTORE_PASSWORD`)
-6. Створює GitHub Release з APK
+Workflow:
+1. JDK 17 + Android SDK
+2. Декодує keystore з `KEYSTORE_BASE64`
+3. Оновлює `version.properties`
+4. Збирає та підписує APK
+5. Створює GitHub Release з APK
 
-### Необхідні секрети GitHub
-
-Для роботи GitHub Actions додай у `Settings → Secrets and variables → Actions`:
+### Секрети GitHub
 
 | Secret | Значення |
 |--------|----------|
-| `KEYSTORE_BASE64` | Keystore-файл у base64 |
-| `KEYSTORE_PASSWORD` | Пароль до keystore |
+| `KEYSTORE_BASE64` | Keystore у base64 |
+| `KEYSTORE_PASSWORD` | Пароль keystore |
 
-Закодувати keystore в base64:
+Закодувати:
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes("app\fazenda-keystore.jks")) | Set-Clipboard
 ```
@@ -85,16 +84,19 @@ git push origin v1.0.9
 
 | Файл | Призначення |
 |------|-------------|
+| `.ai/AGENTS.md` | Інструкції для AI-агентів |
+| `tasks.md` | Черга задач та прогрес |
+| `DOCUMENTATION.md` | Архітектура, БД, навігація, стек |
 | `build-release.ps1` | Скрипт збірки + публікації |
-| `.env` | Пароль keystore (`KEYSTORE_PASSWORD=...`) — в .gitignore |
-| `app/version.properties` | Поточна версія (`VERSION_CODE`, `VERSION_NAME`) |
-| `app/build.gradle.kts` | Android-конфіг, читає `FAZENDA_STORE_PASSWORD` для підпису |
-| `app/fazenda-keystore.jks` | Keystore-файл — в .gitignore |
-| `.github/workflows/release.yml` | GitHub Actions CI/CD |
+| `.env` | Пароль keystore (в .gitignore) |
+| `app/version.properties` | Версія (VERSION_CODE, VERSION_NAME) |
+| `app/build.gradle.kts` | Android-конфіг, signingConfigs |
+| `app/fazenda-keystore.jks` | Keystore (в .gitignore) |
+| `.github/workflows/release.yml` | CI/CD |
 
 ## Keystore
 
 - Файл: `app/fazenda-keystore.jks`
 - Alias: `fazenda-key`
-- Пароль зберігається в `.env` (локально) та GitHub Secrets (для CI/CD)
-- Gradle бере пароль зі змінної `FAZENDA_STORE_PASSWORD`
+- Пароль: `.env` (локально) / GitHub Secrets (CI/CD)
+- Gradle: `FAZENDA_STORE_PASSWORD` env var

@@ -406,15 +406,15 @@ fun ScheduleCard(
     }
     
     val statusColor = when {
-        isCompleted -> Color(0xFF2E7D32)
-        isExpired -> Color(0xFFC62828)
-        else -> Color(0xFFEF6C00)
+        isCompleted -> MaterialTheme.colorScheme.primary
+        isExpired -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.tertiary
     }
     
     val statusContainerColor = when {
-        isCompleted -> Color(0xFFE8F5E9)
-        isExpired -> Color(0xFFFFEBEE)
-        else -> Color(0xFFFFF3E0)
+        isCompleted -> MaterialTheme.colorScheme.primaryContainer
+        isExpired -> MaterialTheme.colorScheme.errorContainer
+        else -> MaterialTheme.colorScheme.tertiaryContainer
     }
 
     Card(

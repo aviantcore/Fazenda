@@ -271,6 +271,12 @@ fun CompatibilityTab(chemicals: List<ChemicalEntity>) {
         checkCompatibility(selectedChemicals.toList())
     }
 
+    val bannerColor = when (compatibilityResult.second) {
+        CompatibilityStatus.NEUTRAL -> MaterialTheme.colorScheme.tertiary
+        CompatibilityStatus.ERROR -> MaterialTheme.colorScheme.error
+        CompatibilityStatus.SUCCESS -> MaterialTheme.colorScheme.primary
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -279,28 +285,28 @@ fun CompatibilityTab(chemicals: List<ChemicalEntity>) {
         // Compatibility banner
         Card(
             colors = CardDefaults.cardColors(
-                containerColor = compatibilityResult.second.copy(alpha = 0.15f)
+                containerColor = bannerColor.copy(alpha = 0.15f)
             ),
             modifier = Modifier.fillMaxWidth(),
-            border = androidx.compose.foundation.BorderStroke(1.dp, compatibilityResult.second)
+            border = androidx.compose.foundation.BorderStroke(1.dp, bannerColor)
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = if (compatibilityResult.second == Color.Red) Icons.Default.Cancel else Icons.Default.Info,
+                    imageVector = if (compatibilityResult.second == CompatibilityStatus.ERROR) Icons.Default.Cancel else Icons.Default.Info,
                     contentDescription = null,
-                    tint = compatibilityResult.second,
+                    tint = bannerColor,
                     modifier = Modifier.size(36.dp)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = if (compatibilityResult.second == Color.Red) "Несумісна суміш!" else "Сумісність суміші",
+                        text = if (compatibilityResult.second == CompatibilityStatus.ERROR) "Несумісна суміш!" else "Сумісність суміші",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
-                        color = compatibilityResult.second
+                        color = bannerColor
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -410,47 +416,49 @@ fun CompatibilityTab(chemicals: List<ChemicalEntity>) {
     }
 }
 
-fun checkCompatibility(selected: List<ChemicalEntity>): Pair<String, Color> {
+enum class CompatibilityStatus { NEUTRAL, ERROR, SUCCESS }
+
+fun checkCompatibility(selected: List<ChemicalEntity>): Pair<String, CompatibilityStatus> {
     if (selected.size <= 1) {
-        return Pair("Оберіть 2 або більше препаратів зі списку нижче, щоб автоматично перевірити сумісність у баковій суміші.", Color(0xFF673AB7)) // Purple
+        return Pair("Оберіть 2 або більше препаратів зі списку нижче, щоб автоматично перевірити сумісність у баковій суміші.", CompatibilityStatus.NEUTRAL)
     }
     
     val groups = selected.map { it.chemicalGroup }.toSet()
     
     // Rule 1: Copper + Sulfur
     if (groups.contains("Мідьвмісні") && groups.contains("Сірковмісні")) {
-        return Pair("Несумісні! Суміш міді та сірки утворює токсичний сульфід міді, що викликає сильні опіки рослин та листя.", Color.Red)
+        return Pair("Несумісні! Суміш міді та сірки утворює токсичний сульфід міді, що викликає сильні опіки рослин та листя.", CompatibilityStatus.ERROR)
     }
     
     // Rule 2: Copper + Organophosphates
     if (groups.contains("Мідьвмісні") && groups.contains("Фосфорорганічні")) {
-        return Pair("Несумісні! Мідні препарати мають лужну реакцію та руйнують фосфорорганічні сполуки, зводячи їх ефективність нанівець.", Color.Red)
+        return Pair("Несумісні! Мідні препарати мають лужну реакцію та руйнують фосфорорганічні сполуки, зводячи їх ефективність нанівець.", CompatibilityStatus.ERROR)
     }
 
     // Rule 3: Biopreparations + Copper
     if (groups.contains("Біопрепарати") && groups.contains("Мідьвмісні")) {
-        return Pair("Несумісні! Препарати на основі міді є сильними фунгіцидами та повністю знищують корисні мікроорганізми у біопрепаратах.", Color.Red)
+        return Pair("Несумісні! Препарати на основі міді є сильними фунгіцидами та повністю знищують корисні мікроорганізми у біопрепаратах.", CompatibilityStatus.ERROR)
     }
 
     // Rule 4: Iron + Copper
     if (groups.contains("Залізовмісні") && groups.contains("Мідьвмісні")) {
-        return Pair("Несумісні! Не можна змішувати залізний купорос та препарати міді. Вони взаємодіють і блокують дію один одного.", Color.Red)
+        return Pair("Несумісні! Не можна змішувати залізний купорос та препарати міді. Вони взаємодіють і блокують дію один одного.", CompatibilityStatus.ERROR)
     }
 
     // Rule 5: Sulfur + Oils
     if (groups.contains("Сірковмісні") && groups.contains("Олійні")) {
-        return Pair("Несумісні! Обробка сіркою разом або невдовзі після олійних емульсій викликає сильні опіки листя рослин.", Color.Red)
+        return Pair("Несумісні! Обробка сіркою разом або невдовзі після олійних емульсій викликає сильні опіки листя рослин.", CompatibilityStatus.ERROR)
     }
 
     // Rule 6: Alkaline + Organophosphates/Pyrethroids
     if (groups.contains("Лужні") && (groups.contains("Фосфорорганічні") || groups.contains("Піретроїди"))) {
-        return Pair("Несумісні! Лужне середовище викликає миттєвий гідроліз пестицидів та повну втрату їх інсектицидної сили.", Color.Red)
+        return Pair("Несумісні! Лужне середовище викликає миттєвий гідроліз пестицидів та повну втрату їх інсектицидної сили.", CompatibilityStatus.ERROR)
     }
     
     // Rule 7: Alkaline + Biopreparations
     if (groups.contains("Лужні") && groups.contains("Біопрепарати")) {
-        return Pair("Несумісні! Сильна лужна реакція (наприклад, Бордоської рідини чи вапна) знищує живі культури бактерій.", Color.Red)
+        return Pair("Несумісні! Сильна лужна реакція (наприклад, Бордоської рідини чи вапна) знищує живі культури бактерій.", CompatibilityStatus.ERROR)
     }
 
-    return Pair("Сумісні! Цю бакову суміш можна застосовувати. УВАГА: завжди спочатку проводьте тест на випадіння осаду у невеликій тарі (повинно бути без пластівців, осаду та розшарування)!", Color(0xFF2E7D32)) // Green
+    return Pair("Сумісні! Цю бакову суміш можна застосовувати. УВАГА: завжди спочатку проводьте тест на випадіння осаду у невеликій тарі (повинно бути без пластівців, осаду та розшарування)!", CompatibilityStatus.SUCCESS)
 }
