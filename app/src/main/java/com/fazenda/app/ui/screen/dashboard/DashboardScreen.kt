@@ -43,6 +43,8 @@ import kotlinx.coroutines.withContext
 import com.fazenda.app.data.entity.CategoryEntity
 import com.fazenda.app.ui.viewmodel.CategoryViewModel
 import com.fazenda.app.ui.component.ScheduleStatusBadge
+import com.fazenda.app.ui.component.ChemicalUsageChart
+import com.fazenda.app.ui.component.ActivityChart
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -147,6 +149,18 @@ fun DashboardScreen(
                             weatherCode = weatherCode,
                             temp = weatherTemp,
                             onRefresh = { dashboardViewModel.loadWeather() }
+                        )
+                    }
+
+                    item {
+                        ChemicalUsageChart(
+                            chemicalUsage = dashboardViewModel.chemicalUsageStats.collectAsState().value
+                        )
+                    }
+
+                    item {
+                        ActivityChart(
+                            activityData = dashboardViewModel.lastWeekActivityStats.collectAsState().value
                         )
                     }
 
