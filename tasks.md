@@ -57,24 +57,24 @@
 ## 🔲 Черга задач
 
 ### Phase 1: Foundation & Infrastructure
-- [ ] **Unified Search Engine**: розширити SearchViewModel — покриття Catalog + Journal + Chemicals з єдиним UI
-- [ ] **Notification System**: дописати повний scheduling flow — вибір дати/часу нагадування для ScheduleEntity, повторювальні alarm
-- [ ] **Shared UI Components**: виокремити переиспользовувані компоненти для status indicators (Planned/In Progress/Completed) та уніфікованих form fields
-- [ ] **Connectivity Status**: додати візуальні індикатори стану підключення до Weather API та Wikipedia API (online/offline badge)
+- [x] **Unified Search Engine**: розширити SearchViewModel — покриття Catalog + Journal + Chemicals з єдиним UI
+- [x] **Notification System**: дописати повний scheduling flow — вибір дати/часу нагадування для ScheduleEntity, повторювальні alarm
+- [x] **Shared UI Components**: виокремити переиспользовані компоненти для status indicators (Planned/In Progress/Completed) та уніфікованих form fields
+- [x] **Connectivity Status**: додати візуальні індикатори стану підключення до Weather API та Wikipedia API (online/offline badge)
 
 ### Phase 2: Interaction Optimization
-- [ ] **Quick Actions FAB**: додати FAB Speed Dial на JournalScreen (вже є MultiFAB компонент — інтегрувати)
-- [ ] **Contextual Defaults**: запам'ятовувати останню вибрану зону/ділянку для швидкого заповнення форм
-- [ ] **Context Menus**: додати long-press/three-dot меню до всіх списків (частково є в каталозі — розширити на журнал та розклад)
+- [x] **Quick Actions FAB**: додати FAB Speed Dial на JournalScreen (вже є MultiFAB компонент — інтегрувати)
+- [x] **Contextual Defaults**: запам'ятовувати останню вибрану зону/ділянку для швидкого заповнення форм
+- [x] **Context Menus**: додати long-press/three-dot меню до всіх списків (частково є в каталозі — розширити на журнал та розклад)
 
 ### Phase 3: Visual & UX Polish
-- [ ] **Dashboard Analytics**: інтегрувати графіки — витрати хімікатів по місяцях, тренди росту (Compose charts або Canvas)
-- [ ] **Enhanced ImageViewerDialog**: додати pinch-to-zoom, swipe gestures, auto-reset zoom, clear page indicators (поточний — базовий pager)
-- [ ] **Status Highlighting**: кольорові статуси (🟢 Completed / 🟡 In Progress / ⚪ Planned) у всіх списках розкладу та журналу
-- [ ] **Progress Indicators**: skeleton screens або shimmer для довгих операцій (завантаження фото, мережеві запити)
+- [x] **Dashboard Analytics**: інтегрувати графіки — витрати хімікатів по місяцях, тренди росту (Compose charts або Canvas)
+- [x] **Enhanced ImageViewerDialog**: додати pinch-to-zoom, swipe gestures, auto-reset zoom, clear page indicators (поточний — базовий pager)
+- [x] **Status Highlighting**: кольорові статуси (🟢 Completed / 🟡 In Progress / ⚪ Planned) у всіх списках розкладу та журналу
+- [x] **Progress Indicators**: skeleton screens або shimmer для довгих операцій (завантаження фото, мережеві запити)
 
 ### Phase 4: User Experience & Onboarding
-- [ ] **Enhanced Onboarding**: розширити інтерактивний туторіал (tooltip hints, highlight UI elements)
+- [ ] **Enhanced Onboarding**: розширити інтерктивний туторіал (tooltip hints, highlight UI elements)
 
 ### Phase 5: Verification & Testing
 - [ ] Unit tests: SearchViewModel, ScheduleAlarmManager, BackupService
